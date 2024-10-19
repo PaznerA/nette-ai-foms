@@ -1,0 +1,74 @@
+{block #content}
+Welcome
+
+{/block}
+
+{block #main}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>LLM form example</h1>
+        </div>
+    </div>
+    <div class="row">
+        <a href="{link aiAutofill!}" class="btn btn-primary ai-autofill-button" >Autofill</a>
+        <div class="col-md-12">
+            {control llmForm}
+        </div>
+    </div>
+</div>
+
+<script n:syntax="double">
+    document.addEventListener('DOMContentLoaded', function () {
+        const autofillButton = document.querySelector('.ai-autofill-button');
+
+        if (autofillButton) {
+            autofillButton.addEventListener('click', async function (e) {
+                console.log('click');
+                e.preventDefault();
+
+                // Read clipboard content
+                let clipboardText = '';
+                try {
+                    clipboardText = await navigator.clipboard.readText();
+                } catch (err) {
+                    alert('Failed to read clipboard contents: ' + err);
+                    return;
+                }
+
+                // Prepare data for AJAX request
+                const form = autofillButton.form;
+                const formData = new FormData(form);
+                formData.append('clipboardText', clipboardText);
+
+                // Send AJAX request to server
+                fetch( {{link "aiAutofill!"}}, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(handleResponse)
+                .catch(error => console.error('Error:', error));
+            });
+        }
+    });
+
+    function handleResponse(response) {
+        console.log(response);
+        if (response.status === 'success') {
+            const data = response.data;
+            console.log(data);
+
+            for (const [key, value] of Object.entries(data)) {
+                const input = document.querySelector(`[name="${key}"]`);
+                if (input) {
+                    input.value = value;
+                }
+            }
+        } else {
+            alert(response.message);
+        }
+    }
+</script>
+{/block}
